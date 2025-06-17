@@ -12,8 +12,6 @@ function App() {
     publicKey: "",
   });
   const [loading, setLoading] = useState({
-    moveCall: false,
-    signMessage: false,
     mintNft: false,
     mintToken: false,
   });
@@ -21,15 +19,7 @@ function App() {
   const [nftName, setNftName] = useState("");
   const [nftDescription, setNftDescription] = useState("");
   const [nftImageUrl, setNftImageUrl] = useState("");
-  const [customPackageId, setCustomPackageId] = useState("");
 
-  // Package ID yang valid dari contoh yang ditemukan
-  const EXAMPLE_PACKAGES = {
-    // Sui system package (selalu ada dan stabil)
-    SUI_SYSTEM: "0x3",
-    // Clock object (selalu ada)
-    CLOCK: "0x6",
-  };
   const openInExplorer = (digest, type = "transaction") => {
     const baseUrl = "https://explorer.sui.io";
     let url;
@@ -81,44 +71,6 @@ function App() {
     setResults((prev) => [newResult, ...prev]);
   };
 
-  async function handleMoveCall() {
-    if (!wallet.connected) {
-      addResult("Move Call", "error", "Please connect wallet first");
-      return;
-    }
-
-    setLoading((prev) => ({ ...prev, moveCall: true }));
-    try {
-      const tx = new Transaction();
-
-      // Operasi yang aman: split coin dari gas object
-      tx.splitCoins(tx.gas, [tx.pure.u64(1000000)]); // 0.001 SUI
-
-      const result = await wallet.signAndExecuteTransaction({
-        transaction: tx,
-        options: {
-          showEffects: true,
-          showObjectChanges: true,
-        },
-      });
-
-      addResult(
-        "Move Call",
-        "success",
-        "Transaction executed successfully! Split 0.001 SUI from gas object.",
-        result
-      );
-    } catch (e) {
-      addResult(
-        "Move Call",
-        "error",
-        `Failed to execute transaction: ${e.message}`
-      );
-    } finally {
-      setLoading((prev) => ({ ...prev, moveCall: false }));
-    }
-  }
-
   async function handleMintToken() {
     if (!wallet.connected) {
       addResult("Mint Token", "error", "Please connect wallet first");
@@ -167,35 +119,6 @@ function App() {
       );
     } finally {
       setLoading((prev) => ({ ...prev, mintToken: false }));
-    }
-  }
-
-  async function handleSignMessage() {
-    if (!wallet.connected) {
-      addResult("Sign Message", "error", "Please connect wallet first");
-      return;
-    }
-
-    setLoading((prev) => ({ ...prev, signMessage: true }));
-    try {
-      const result = await wallet.signPersonalMessage({
-        message: new TextEncoder().encode("HIDUP CU KO WIE!"),
-      });
-
-      addResult(
-        "Sign Message",
-        "success",
-        "Message signed successfully",
-        result
-      );
-    } catch (e) {
-      addResult(
-        "Sign Message",
-        "error",
-        `Failed to sign message: ${e.message}`
-      );
-    } finally {
-      setLoading((prev) => ({ ...prev, signMessage: false }));
     }
   }
 
@@ -250,7 +173,7 @@ function App() {
     setLoading((prev) => ({ ...prev, validateSignature: true }));
     try {
       // Pesan yang sama dengan yang ditandatangani
-      const originalMessage = "HIDUP BLONDE!";
+      const originalMessage = "Halo, SUI!";
       const messageBytes = new TextEncoder().encode(originalMessage);
 
       // Sign message untuk mendapatkan signature
@@ -361,29 +284,6 @@ function App() {
               </div>
             </div>
 
-            {/* Configuration Card */}
-            <div className="card config-card">
-              <div className="card-header">
-                <h2>⚙️ Configuration</h2>
-              </div>
-              <div className="card-content">
-                <div className="form-group">
-                  <label htmlFor="packageId">
-                    Custom Package ID (opsional)
-                  </label>
-                  <input
-                    id="packageId"
-                    type="text"
-                    value={customPackageId}
-                    onChange={(e) => setCustomPackageId(e.target.value)}
-                    placeholder="0x... (kosongkan untuk menggunakan sistem SUI)"
-                    className="form-input"
-                  />
-                  <small>Gunakan package ID smart contract Anda sendiri</small>
-                </div>
-              </div>
-            </div>
-
             {/* Actions Card */}
             <div className="card actions-card">
               <div className="card-header">
@@ -392,17 +292,6 @@ function App() {
               <div className="card-content">
                 <div className="actions-grid">
                   <button
-                    onClick={handleMoveCall}
-                    className={`action-button primary ${
-                      loading.moveCall ? "loading" : ""
-                    }`}
-                    disabled={loading.moveCall}
-                  >
-                    {loading.moveCall
-                      ? "⏳ Processing..."
-                      : "💰 Split SUI Coins"}
-                  </button>
-                  <button
                     onClick={handleMintToken}
                     className={`action-button secondary ${
                       loading.mintToken ? "loading" : ""
@@ -410,15 +299,6 @@ function App() {
                     disabled={loading.mintToken}
                   >
                     {loading.mintToken ? "⏳ Minting..." : "🪙 Mint Test Token"}
-                  </button>
-                  <button
-                    onClick={handleSignMessage}
-                    className={`action-button tertiary ${
-                      loading.signMessage ? "loading" : ""
-                    }`}
-                    disabled={loading.signMessage}
-                  >
-                    {loading.signMessage ? "⏳ Signing..." : "✍️ Sign Message"}
                   </button>
                   <button
                     onClick={handleValidateSignature}
@@ -523,21 +403,12 @@ function App() {
 
                         {/* Tambahkan tombol explorer di luar details juga */}
                         {result.digest && (
-                          <div style={{ marginTop: "10px" }}>
+                          <div className="explorer-buttons">
                             <button
                               onClick={() =>
                                 openInExplorer(result.digest, "transaction")
                               }
-                              style={{
-                                padding: "8px 12px",
-                                background: "#4f46e5",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                marginRight: "10px",
-                                fontSize: "14px",
-                              }}
+                              className="explorer-btn primary"
                             >
                               🔍 Lihat di Sui Explorer
                             </button>
@@ -546,15 +417,7 @@ function App() {
                               onClick={() =>
                                 openInExplorer(walletInfo.address, "address")
                               }
-                              style={{
-                                padding: "8px 12px",
-                                background: "#059669",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "6px",
-                                cursor: "pointer",
-                                fontSize: "14px",
-                              }}
+                              className="explorer-btn secondary"
                             >
                               👤 Lihat Alamat Wallet
                             </button>
@@ -588,8 +451,7 @@ function App() {
             <div className="features-list">
               <div className="feature">✨ Demo NFT creation</div>
               <div className="feature">🪙 Test token minting</div>
-              <div className="feature">💰 Coin splitting</div>
-              <div className="feature">✍️ Message signing</div>
+              <div className="feature">🔍 Signature validation</div>
               <div className="feature">💼 Wallet information</div>
             </div>
           </div>
